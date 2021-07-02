@@ -1,5 +1,5 @@
 import pygame
-import sys
+import sys,os
 import random
 
 class Snek():
@@ -9,6 +9,7 @@ class Snek():
 		self.dir=random.choice([UP,DOWN,LEFT,RIGHT])
 		self.color=(17, 24, 47)
 		self.score=0
+		self.ded_sound=load_sound('ded.wav')
 
 	def get_head_pos(self):
 		return self.positons[0]
@@ -35,6 +36,7 @@ class Snek():
 		self.positons=[((SCREEN_W/2),(SCREEN_H/2))]
 		self.dir=random.choice([UP,DOWN,LEFT,RIGHT])
 		self.score=0
+		self.ded_sound.play()
 
 	def draw(self,surface):
 		for p in self.positons:
@@ -85,6 +87,19 @@ def drawGrid(surface):
 				rr=pygame.Rect((x*GRIDSIZE,y*GRIDSIZE),(GRIDSIZE,GRIDSIZE))
 				pygame.draw.rect(surface,(84,194,205),rr)
 
+def load_sound(name):
+	class NoneSound:
+		def play(self): pass
+	if not pygame.mixer:
+		return NoneSound()
+	fullname=os.path.join('assets',name)
+	try:
+		sound=pygame.mixer.Sound(fullname)
+	except pygame.error as message:
+		print('Cannot load sound:',fullname)
+		raise SystemExit(message)
+	return sound
+
 SCREEN_W=480
 SCREEN_H=480
 
@@ -97,11 +112,15 @@ DOWN=(0,1)
 LEFT=(-1,0)
 RIGHT=(1,0)
 
+if not pygame.mixer:
+	print('Warning, mixers disabled.')
+
 def main():
 	pygame.init()
 
 	clock=pygame.time.Clock()
 	screen=pygame.display.set_mode((SCREEN_W,SCREEN_H),0,32)
+	pygame.display.set_caption('snek')
 
 	surface=pygame.Surface(screen.get_size())
 	surface=surface.convert()
@@ -109,10 +128,14 @@ def main():
 
 	snek=Snek()
 	food=Food()
+	eat_sound=load_sound('eat.wav')
+	muzik=load_sound('machete.mp3')
 
 	myfont=pygame.font.SysFont('monospace',16)
 
 	score=0
+	muzik.play()
+	
 	while(True):
 		clock.tick(10)
 		snek.handle_keys()
@@ -121,11 +144,12 @@ def main():
 		if snek.get_head_pos()==food.pos:
 			snek.length+=1
 			score+=1
+			eat_sound.play()
 			food.rand_pos()
 		snek.draw(surface)
 		food.draw(surface)
 		screen.blit(surface,(0,0))
-		text=myfont.render('Score: {0}'.format(score),1,(0,0,0))
+		text=myfont.render("Score: {0}".format(score),1,(0,0,0))
 		screen.blit(text,(5,10))
 		pygame.display.update()
 
